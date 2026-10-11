@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drona Books</title>
+    <link rel="stylesheet" href="bookstyle.css">
+</head>
+<body>
+
+<!-- Login Modal -->
+<div class="login-modal" id="loginModal">
+    <div class="login-box">
+        <button class="close-login-btn" onclick="closeLoginModal()">&times;</button>
+        <h1>📚 Drona Books</h1>
+        <p class="login-subtitle">Login to save your cart and preferences</p>
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter your username">
+        </div>
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password">
+        </div>
+        <button class="login-btn" onclick="login()">Login</button>
+        <button class="guest-btn" onclick="continueAsGuest()">Continue as Guest</button>
+    </div>
+</div>
+
+<!-- Main App -->
+<div class="app-container" id="mainApp">
+    <div class="header">
+        <h1 onclick="goToWelcome()">📚 Drona Books</h1>
+        <div class="header-right">
+            <button class="home-link" onclick="goToWelcome()">🏠 Home</button>
+            <div class="cart-icon" onclick="toggleCart()">
+                🛒
+                <span class="cart-count" id="cartCount">0</span>
+            </div>
+            <span id="username-display"></span>
+            <button class="logout-btn" id="logoutBtn" onclick="logout()" style="display: none;">Logout</button>
+            <button class="login-header-btn" id="loginBtn" onclick="openLoginModal()">Login</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Welcome/Landing Page -->
+        <div id="welcomePage">
+            <div class="welcome-page" id="welcomeStage">
+                <div class="welcome-content">
+                    <div class="welcome-icon">📚</div>
+                    <h1 class="welcome-title">Welcome to Drona Books</h1>
+                    <p class="welcome-subtitle">Your Gateway to Knowledge & Excellence</p>
+                    <p class="welcome-description">
+                        Discover a huge collection of engineering, computer science and
+                        business books — from Mechanical to AI & ML, Civil to Aerospace.
+                        Everything a student needs, floating right at your fingertips!
+                    </p>
+                    <button class="explore-btn" onclick="showCategories()">Explore Books 🚀</button>
+
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-text">Quick Access</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📖</div>
+                            <div class="feature-text">10 Branches</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Quality Content</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🛒</div>
+                            <div class="feature-text">Easy Ordering</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Page - Categories Grid -->
+        <div id="homePage" class="hidden">
+            <h2 class="page-title">Browse by Category</h2>
+            <div class="categories-grid" id="categoriesGrid"></div>
+        </div>
+
+        <!-- Category Book Page -->
+        <div id="categoryPage" class="hidden">
+            <button class="back-btn" onclick="goHome()">← Back to Categories</button>
+            <h2 class="page-title" id="categoryPageTitle"></h2>
+            <div class="books-grid" id="categoryBooksGrid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Modal -->
+<div class="cart-modal" id="cartModal">
+    <div class="cart-content">
+        <div class="cart-header">
+            <h2>🛒 Your Cart</h2>
+            <button class="close-btn" onclick="toggleCart()">&times;</button>
+        </div>
+        <div id="cartItems"></div>
+        <button class="checkout-btn" onclick="checkout()">Checkout</button>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+    let currentUser = '';
+    let isGuest = true;
+
+    // ===== Book Catalog (expanded) =====
+    const catalog = {
+        mechanical: {
+            icon: '⚙️',
+            name: 'Mechanical Engineering',
+            books: [
+                { icon: '🔥', name: 'Thermodynamics', author: 'Cengel', price: 649 },
+                { icon: '💧', name: 'Fluid Mechanics', author: 'White', price: 629 },
+                { icon: '🔧', name: 'Machine Design', author: 'Shigley', price: 699 },
+                { icon: '🏭', name: 'Manufacturing Processes', author: 'Kalpakjian', price: 599 },
+                { icon: '🌡️', name: 'Heat Transfer', author: 'Incropera', price: 619 },
+                { icon: '🔩', name: 'Theory of Machines', author: 'Khurmi', price: 549 }
+            ]
+        },
+        electrical: {
+            icon: '⚡',
+            name: 'Electrical Engineering',
+            books: [
+                { icon: '🔌', name: 'Electric Circuits', author: 'Hayt', price: 549 },
+                { icon: '⚡', name: 'Power Systems', author: 'Kothari', price: 679 },
+                { icon: '🎛️', name: 'Control Systems', author: 'Ogata', price: 599 },
+                { icon: '🔋', name: 'Electrical Machines', author: 'Fitzgerald', price: 649 },
+                { icon: '📈', name: 'Power Electronics', author: 'Rashid', price: 629 },
+                { icon: '🏗️', name: 'Electrical Machine Design', author: 'Sawhney', price: 589 }
+            ]
+        },
+        computer: {
+            icon: '💻',
+            name: 'Computer Engineering',
+            books: [
+                { icon: '🗂️', name: 'Data Structures', author: 'Cormen', price: 599 },
+                { icon: '💻', name: 'Operating Systems', author: 'Silberschatz', price: 499 },
+                { icon: '🗄️', name: 'Database Management', author: 'Korth', price: 549 },
+                { icon: '🌐', name: 'Computer Networks', author: 'Tanenbaum', price: 579 },
+                { icon: '🧮', name: 'Computer Architecture', author: 'Patterson & Hennessy', price: 649 },
+                { icon: '🔐', name: 'Cryptography & Network Security', author: 'Stallings', price: 619 }
+            ]
+        },
+        csit: {
+            icon: '🖥️',
+            name: 'CSIT',
+            books: [
+                { icon: '🐍', name: 'Python Programming', author: 'Zelle', price: 449 },
+                { icon: '🧮', name: 'Discrete Structures (DSTL)', author: 'Rosen', price: 529 },
+                { icon: '📱', name: 'Mobile App Development', author: 'Deitel', price: 559 },
+                { icon: '☁️', name: 'Cloud Computing', author: 'Rittinghouse', price: 599 },
+                { icon: '🧵', name: 'Software Engineering', author: 'Sommerville', price: 589 },
+                { icon: '🔎', name: 'Compiler Design', author: 'Aho', price: 649 }
+            ]
+        },
+        mba: {
+            icon: '💼',
+            name: 'MBA',
+            books: [
+                { icon: '📊', name: 'Marketing Management', author: 'Kotler', price: 599 },
+                { icon: '💰', name: 'Financial Management', author: 'Khan & Jain', price: 649 },
+                { icon: '👥', name: 'Human Resource Management', author: 'Dessler', price: 549 },
+                { icon: '📈', name: 'Business Strategy', author: 'Porter', price: 619 },
+                { icon: '🌍', name: 'International Business', author: 'Daniels', price: 589 },
+                { icon: '🧾', name: 'Operations Management', author: 'Heizer', price: 569 }
+            ]
+        },
+        aiml: {
+            icon: '🤖',
+            name: 'AI & ML',
+            books: [
+                { icon: '🧠', name: 'Machine Learning', author: 'Tom Mitchell', price: 699 },
+                { icon: '🤖', name: 'Deep Learning', author: 'Goodfellow', price: 749 },
+                { icon: '👁️', name: 'Computer Vision', author: 'Szeliski', price: 679 },
+                { icon: '🗣️', name: 'Natural Language Processing', author: 'Jurafsky', price: 659 },
+                { icon: '📉', name: 'Pattern Recognition', author: 'Bishop', price: 629 },
+                { icon: '🧬', name: 'Neural Networks & AI', author: 'Russell & Norvig', price: 719 }
+            ]
+        },
+        civil: {
+            icon: '🏗️',
+            name: 'Civil Engineering',
+            books: [
+                { icon: '🏢', name: 'Structural Analysis', author: 'Hibbeler', price: 699 },
+                { icon: '🧱', name: 'Concrete Technology', author: 'Neville', price: 579 },
+                { icon: '⛏️', name: 'Geotechnical Engineering', author: 'Das', price: 629 },
+                { icon: '🚧', name: 'Transportation Engineering', author: 'Khanna', price: 549 },
+                { icon: '💧', name: 'Hydraulics & Fluid Mechanics', author: 'Modi & Seth', price: 599 },
+                { icon: '🌉', name: 'Bridge Engineering', author: 'Ponnuswamy', price: 649 }
+            ]
+        },
+        electronics: {
+            icon: '📡',
+            name: 'Electronics Engineering',
+            books: [
+                { icon: '🔢', name: 'Digital Electronics', author: 'Morris Mano', price: 529 },
+                { icon: '📡', name: 'Communication Systems', author: 'Taub', price: 599 },
+                { icon: '🖥️', name: 'Microprocessors', author: 'Gaonkar', price: 549 },
+                { icon: '💾', name: 'VLSI Design', author: 'Weste', price: 679 },
+                { icon: '📶', name: 'Antenna & Wave Propagation', author: 'Balanis', price: 619 },
+                { icon: '🔊', name: 'Signals & Systems', author: 'Oppenheim', price: 589 }
+            ]
+        },
+        chemical: {
+            icon: '⚗️',
+            name: 'Chemical Engineering',
+            books: [
+                { icon: '⚗️', name: 'Chemical Process Design', author: 'Coulson', price: 749 },
+                { icon: '🧪', name: 'Mass Transfer Operations', author: 'Treybal', price: 699 },
+                { icon: '🔬', name: 'Chemical Reaction Engineering', author: 'Levenspiel', price: 649 },
+                { icon: '📊', name: 'Process Control', author: 'Stephanopoulos', price: 679 },
+                { icon: '🧫', name: 'Biochemical Engineering', author: 'Bailey & Ollis', price: 629 },
+                { icon: '🛢️', name: 'Petroleum Refining', author: 'Gary & Handwerk', price: 659 }
+            ]
+        },
+        aerospace: {
+            icon: '🚀',
+            name: 'Aerospace Engineering',
+            books: [
+                { icon: '✈️', name: 'Aerodynamics', author: 'Anderson', price: 699 },
+                { icon: '🚀', name: 'Rocket Propulsion', author: 'Sutton', price: 749 },
+                { icon: '🛰️', name: 'Orbital Mechanics', author: 'Curtis', price: 679 },
+                { icon: '🧭', name: 'Flight Dynamics', author: 'Nelson', price: 649 },
+                { icon: '🪶', name: 'Aircraft Structures', author: 'Megson', price: 629 },
+                { icon: '🌌', name: 'Spacecraft Systems Engineering', author: 'Fortescue', price: 719 }
+            ]
+        }
+    };
+
+    // ===== Render categories dynamically =====
+    function renderCategories() {
+        const grid = document.getElementById('categoriesGrid');
+        grid.innerHTML = Object.keys(catalog).map(key => {
+            const cat = catalog[key];
+            return `
+                <div class="category-card" onclick="openCategory('${key}')">
+                    <div class="category-icon">${cat.icon}</div>
+                    <div class="category-name">${cat.name}</div>
+                    <div class="category-count">${cat.books.length} books available</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openCategory(key) {
+        const cat = catalog[key];
+        document.getElementById('welcomePage').classList.add('hidden');
+        document.getElementById('homePage').classList.add('hidden');
+        document.getElementById('categoryPage').classList.remove('hidden');
+
+        document.getElementById('categoryPageTitle').textContent = `${cat.icon} ${cat.name}`;
+        document.getElementById('categoryBooksGrid').innerHTML = cat.books.map(book => {
+            const inCart = cart.some(item => item.name === book.name);
+            return `
+                <div class="book-card">
+                    <div class="book-icon">${book.icon}</div>
+                    <div class="book-name">${book.name}</div>
+                    <div class="book-author">by ${book.author}</div>
+                    <div class="book-price">₹${book.price}</div>
+                    <button class="add-cart-btn ${inCart ? 'in-cart' : ''}" ${inCart ? 'disabled' : ''}
+                        onclick="addToCart('${book.name.replace(/'/g, "\\'")}', '${cat.name}', ${book.price}, this)">
+                        ${inCart ? 'In Cart ✓' : 'Add to Cart'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        window.scrollTo(0, 0);
+    }
+
+    function goHome() {
+        document.getElementById('welcomePage').classList.add('hidden');
+        document.getElementById('categoryPage').classList.add('hidden');
+        document.getElementById('homePage').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    function goToWelcome() {
+        document.getElementById('homePage').classList.add('hidden');
+        document.getElementById('categoryPage').classList.add('hidden');
+        document.getElementById('welcomePage').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    function showCategories() {
+        document.getElementById('welcomePage').classList.add('hidden');
+        document.getElementById('homePage').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    // ===== Login =====
+    window.onload = function() {
+        document.getElementById('loginModal').style.display = 'flex';
+        renderCategories();
+        spawnFloatingItems();
+    };
+
+    function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
+    function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+
+    function continueAsGuest() {
+        isGuest = true;
+        currentUser = '';
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('username-display').textContent = 'Guest User';
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('logoutBtn').style.display = 'none';
+    }
+
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        if (username && password) {
+            isGuest = false;
+            currentUser = username;
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('username-display').textContent = `Hello, ${username}!`;
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+        } else {
+            alert('Please enter both username and password');
+        }
+    }
+
+    function logout() {
+        currentUser = '';
+        isGuest = true;
+        cart = [];
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('username-display').textContent = 'Guest User';
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('logoutBtn').style.display = 'none';
+        updateCartCount();
+        goToWelcome();
+    }
+
+    // ===== Cart =====
+    function addToCart(bookName, stream, price, button) {
+        const existingBook = cart.find(item => item.name === bookName);
+        if (!existingBook) {
+            cart.push({ name: bookName, stream: stream, price: price });
+            updateCartCount();
+            if (button) {
+                button.textContent = 'In Cart ✓';
+                button.classList.add('in-cart');
+                button.disabled = true;
+            }
+        }
+    }
+
+    function removeFromCart(bookName) {
+        cart = cart.filter(item => item.name !== bookName);
+        updateCartCount();
+        displayCart();
+        const catPage = document.getElementById('categoryPage');
+        if (!catPage.classList.contains('hidden')) {
+            document.querySelectorAll('.book-card').forEach(card => {
+                const name = card.querySelector('.book-name').textContent;
+                if (name === bookName) {
+                    const btn = card.querySelector('.add-cart-btn');
+                    btn.textContent = 'Add to Cart';
+                    btn.classList.remove('in-cart');
+                    btn.disabled = false;
+                }
+            });
+        }
+    }
+
+    function updateCartCount() {
+        document.getElementById('cartCount').textContent = cart.length;
+    }
+
+    function toggleCart() {
+        const modal = document.getElementById('cartModal');
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
+        } else {
+            modal.style.display = 'flex';
+            displayCart();
+        }
+    }
+
+    function displayCart() {
+        const cartItemsDiv = document.getElementById('cartItems');
+        if (cart.length === 0) {
+            cartItemsDiv.innerHTML = '<div class="empty-cart">Your cart is empty 🛒</div>';
+        } else {
+            cartItemsDiv.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: #a8a2d0;">${item.stream} · ₹${item.price}</small>
+                    </div>
+                    <button class="remove-btn" onclick="removeFromCart('${item.name.replace(/'/g, "\\'")}')">Remove</button>
+                </div>
+            `).join('');
+        }
+    }
+
+    function checkout() {
+        if (cart.length === 0) {
+            alert('Your cart is empty!');
+        } else {
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            alert(`Checkout successful! ${cart.length} book(s) ordered for ₹${total}. 🎉`);
+            cart = [];
+            updateCartCount();
+            toggleCart();
+            const catPage = document.getElementById('categoryPage');
+            if (!catPage.classList.contains('hidden')) {
+                document.querySelectorAll('.add-cart-btn').forEach(btn => {
+                    btn.textContent = 'Add to Cart';
+                    btn.classList.remove('in-cart');
+                    btn.disabled = false;
+                });
+            }
+        }
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('cartModal');
+        if (event.target === modal) modal.style.display = 'none';
+    };
+
+    // ===== Anti-Gravity Floating Elements =====
+    function spawnFloatingItems() {
+        const stage = document.getElementById('welcomeStage');
+        const icons = ['📘', '📗', '📙', '📕', '✏️', '🧮', '⚙️', '💡', '🚀', '🔬'];
+        const count = 22;
+
+        for (let i = 0; i < count; i++) {
+            const el = document.createElement('div');
+            el.className = 'float-item';
+            el.textContent = icons[Math.floor(Math.random() * icons.length)];
+            el.style.left = Math.random() * 100 + '%';
+            el.style.fontSize = (22 + Math.random() * 30) + 'px';
+            const duration = 8 + Math.random() * 10;
+            el.style.animationDuration = duration + 's';
+            el.style.animationDelay = (-Math.random() * duration) + 's';
+            stage.appendChild(el);
+        }
+    }
+</script>
+
+</body>
+</html>
